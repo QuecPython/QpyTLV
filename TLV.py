@@ -206,12 +206,12 @@ class TLV:
 				for tag, tag_name in self.tags.items():
 					if self.tlv_string[i:i+tag_length] == tag:
 						try:
-							value_length = int(self.tlv_string[i+tag_length:i+tag_length+2], 16)
+							value_length = int(self.tlv_string[i+tag_length:i+tag_length+4], 16)
 						except ValueError:
 							raise ValueError('Parse error: tag ' + tag + ' has incorrect data length')
 
-						value_start_position = i+tag_length+2
-						value_end_position = i+tag_length+2+value_length*2
+						value_start_position = i+tag_length+4
+						value_end_position = i+tag_length+4+value_length*2
 
 						if value_end_position > len(self.tlv_string):
 							raise ValueError('Parse error: tag ' + tag + ' declared data of length ' + str(value_length) + ', but actual data length is ' + str(int(len(self.tlv_string[value_start_position-1:-1])/2)))
