@@ -217,7 +217,7 @@ class TLV:
         
         self.tag_lengths = set()
         for tag, tag_name in self.tags.items():
-            self.tag_lengths.add(len(tag)/2)
+            self.tag_lengths.add(len(tag)//2)
 
 
     def parse(self, tlv_data):
@@ -245,7 +245,7 @@ class TLV:
                         value_end_position = i+tag_length+2+value_length
 
                         if value_end_position > len(self.tlv_data):
-                            raise ValueError('Parse error: tag ' + tag_s + ' declared data of length ' + str(value_length) + ', but actual data length is ' + str(int(len(self.tlv_data[value_start_position-1:-1])/2)))
+                            raise ValueError('Parse error: tag ' + tag_s + ' declared data of length ' + str(value_length) + ', but actual data length is ' + str(int(len(self.tlv_data[value_start_position-1:-1])//2)))
 
                         value = self.tlv_data[value_start_position:value_end_position]
                         parsed_data[tag_s] = value
@@ -254,7 +254,7 @@ class TLV:
                         tag_found = True
 
             if not tag_found:
-                msg = 'Unknown tag found: ' + data2hexstring(self.tlv_data[i:i+10])
+                msg = 'Unknown tag found: ' + str(self.tlv_data[i:i+10])
                 raise ValueError(msg)
         return parsed_data
 
@@ -267,6 +267,10 @@ class TLV:
             if not value:
                 return self.tlv_data
 
-            self.tlv_data = self.tlv_data + hexstring2bytes(tag) + hexstring2bytes(hexify(len(value))) + value
+            value_len = len(value)
+            if value_len > 65535:
+                raise ValueError("Length of value in TLV is too long ( > 65535).")
+
+            self.tlv_data = self.tlv_data + hexstring2bytes(tag) + hexstring2bytes("%04X" % value_len) + value
 
         return self.tlv_data
