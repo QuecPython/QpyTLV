@@ -10,7 +10,7 @@
 @copyright :Copyright (c) 2022
 """
 
-from usr.TLV import TLV, data2hexstring
+from usr.TLV import TLV
 
 class QpyTLV(object):
     def __init__(self, tags=None):
@@ -18,8 +18,7 @@ class QpyTLV(object):
 
     def parse(self, tlv_data):
         if type(tlv_data) is bytes or type(tlv_data) is bytearray:
-            tlv_string = data2hexstring(tlv_data)
-            return self._tlv.parse(tlv_string)
+            return self._tlv.parse(tlv_data)
         else:
             raise TypeError("tlv_data must be bytes or bytearray.")
     

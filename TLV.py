@@ -240,7 +240,7 @@ class TLV:
                         raise ValueError("tag string must be hex format.")
                     
                     if self.tlv_data[i:i+tag_length] == tag:
-                        value_length = self.tlv_data[i+tag_length] << 8 + self.tlv_data[i+tag_length+1]
+                        value_length = (self.tlv_data[i+tag_length] << 8) + self.tlv_data[i+tag_length+1]
                         value_start_position = i+tag_length+2
                         value_end_position = i+tag_length+2+value_length
 
