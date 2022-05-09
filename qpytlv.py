@@ -23,7 +23,7 @@ class QpyTLV(object):
         else:
             raise TypeError("tlv_data must be bytes or bytearray.")
     
-    def _build_low(self, data, upper_data=None):
+    def _build(self, data, upper_data=None, upper_tag=None):
         """
         Argument format:
         {
@@ -44,31 +44,28 @@ class QpyTLV(object):
         }
         """
 
+        nested_key = []
+        res = b''
+
         if type(data) is not dict:
             raise TypeError("data must be dict.")
 
-        if(len(data) != 1):
-            raise ValueError("len(data) must be 1.")
+        for key, value in data.items():
+            if not (type(value) is bytes or type(value) is bytearray):
+                nested_key.append(key)
 
-        value = list(data.items())[0][1]
-        res = b''
-        if type(value) is bytes or type(value) is bytearray:
+        if len(nested_key) == 0:
             res = self._tlv.build(data)
             if upper_data:
-                upper_tag = list(upper_data.items())[0][0]
                 upper_data[upper_tag] = res
         else:
-            res = self._build_low(value, data)
+            for key in nested_key:
+                self._build(data[key], data, key)
+            res = self._tlv.build(data)
+            if upper_data:
+                upper_data[upper_tag] = res
+
         return res
-
-    def _build(self, data):
-        if type(data) is not dict:
-            raise TypeError("data must be dict.")
-
-        while type(list(data.items())[0][1]) is dict:
-            self._build_low(data)
-
-        return self._build_low(data)
 
     def build(self, data):
         return self._build(data)
