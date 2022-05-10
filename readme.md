@@ -100,7 +100,7 @@ tlv = QpyTLV(tags)
 ```python
 {
     'hex_tag1': {
-        'hex_tag2'：b'value2'
+        'hex_tag2': b'value2'
     }
 }
 ```
@@ -108,7 +108,7 @@ tlv = QpyTLV(tags)
 也可以做并列扩展，用于构建拼接的TLV结构，如下所示：
 ```python
 {
-    'hex_tag1': b'value1'，
+    'hex_tag1': b'value1',
     'hex_tag2': b'value2'
 }
 ```
