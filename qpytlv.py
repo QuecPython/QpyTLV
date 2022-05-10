@@ -28,7 +28,8 @@ class QpyTLV(object):
         {
             <tag0_str>: {
                 <tag1_str>: {
-                    <tag2_str>: value
+                    <tag2_str1>: <value>,
+                    <tag2_str2>: <value>
                 }
             }
         }
@@ -38,6 +39,9 @@ class QpyTLV(object):
             "0000": {
                 "0100": {
                     "0200": b'\x00\x01\x02\x03'
+                    "0201": {
+                        "0300": b'\x00\x01\x02\x03'
+                    }
                 }
             }
         }
