@@ -130,6 +130,8 @@ d = {
 }
 ```
 
+> **用户数据全部限制为bytes格式**。
+
 ### **Step6. Build a TLV structure**
 
 ```python
