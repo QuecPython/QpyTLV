@@ -25,9 +25,11 @@ class QpyTLVIO(QpyTLVIOAbs):
     def write(self, data):
         return self._serial.write(data)
 
-def tlv_parse_cb(errno, parsed_data):
-    print(errno, ",", parsed_data)
-
+def tlv_parse_cb(errno, unparsed_data_len, parsed_data, original_data):
+    print("errno:", errno)
+    print("unparsed_data_len:", unparsed_data_len)
+    print("parsed_data:", parsed_data)
+    print("original_data:", original_data)
 
 tags = ['aaaa', 'bbbb', 'cccc', 'dddd', 'eeee', 'ffff', 'a5a5', 'e1e1']
 qpytlv = QpyTLV(tags)

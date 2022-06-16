@@ -171,8 +171,9 @@ class ErrorNo:
     NO_ERROR = 0
     TAG_ILLEGAL = -1
     TAG_NOT_FOUND = -2
-    VAL_IS_SHORT = -3
-    VAL_IS_LONG = -4
+    LEN_IS_INSUFF = -3
+    VAL_IS_INSUFF = -4
+    VAL_IS_OVERFLOW = -5
 
 def hexify(number):
     """
@@ -231,7 +232,13 @@ class TLV:
 
 
     def parse(self, tlv_data):
-        """
+        """_summary_
+
+        Args:
+            tlv_data (bytes): data to be parsed
+
+        Returns:
+            tuple: (errno, unparsed_data_len, parsed_data)
         """
         parsed_data = OrderedDict()
         self.tlv_data = tlv_data
@@ -247,16 +254,21 @@ class TLV:
                         tag = hexstring2bytes(tag_s)
                     except:
                         log.error('Illegal tag:', tag_s)
-                        return ErrorNo.TAG_ILLEGAL, parsed_data
+                        return ErrorNo.TAG_ILLEGAL, len(self.tlv_data) - i, parsed_data
                     
                     if self.tlv_data[i:i+tag_length] == tag:
-                        value_length = (self.tlv_data[i+tag_length] << 8) + self.tlv_data[i+tag_length+1]
+                        try:
+                            value_length = (self.tlv_data[i+tag_length] << 8) + self.tlv_data[i+tag_length+1]
+                        except:
+                            log.error('<len> is insufficient')
+                            return ErrorNo.LEN_IS_INSUFF, len(self.tlv_data) - i, parsed_data
+
                         value_start_position = i+tag_length+2
                         value_end_position = i+tag_length+2+value_length
 
                         if value_end_position > len(self.tlv_data):
-                            log.error('<value> is short.')
-                            return ErrorNo.VAL_IS_SHORT, parsed_data
+                            log.error('<value> is insufficient.')
+                            return ErrorNo.VAL_IS_INSUFF, len(self.tlv_data) - i, parsed_data
 
                         value = self.tlv_data[value_start_position:value_end_position]
                         parsed_data[tag_s] = value
@@ -267,8 +279,8 @@ class TLV:
 
             if not tag_found:
                 log.error('Unknown tag found: ' + str(self.tlv_data[i:i+10]))
-                return ErrorNo.TAG_NOT_FOUND, parsed_data
-        return ErrorNo.NO_ERROR, parsed_data
+                return ErrorNo.TAG_NOT_FOUND, len(self.tlv_data) - i, parsed_data
+        return ErrorNo.NO_ERROR, len(self.tlv_data) - i, parsed_data
 
 
     def get_parse_position(self):
@@ -285,7 +297,7 @@ class TLV:
             value_len = len(value)
             if value_len > 65535:
                 log.error("Length of value in TLV is too long ( > 65535 ).")
-                return ErrorNo.VAL_IS_LONG, self.tlv_data
+                return ErrorNo.VAL_IS_OVERFLOW, self.tlv_data
 
             self.tlv_data = self.tlv_data + hexstring2bytes(tag) + hexstring2bytes("%04X" % value_len) + value
 

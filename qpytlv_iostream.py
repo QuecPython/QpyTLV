@@ -30,14 +30,10 @@ class QpyTLVIoStream(object):
         if not callable(parse_cb):
             raise TypeError("<parse_cb> must be callable.")
 
-        for tag_length in qpytlv._tlv.tag_lengths:
-            if tag_length != 2:
-                raise QpyTLVError("Tag length is limited to 2 bytes.")
-
         self._qpytlv = qpytlv
         self._io = io
         self._parse_cb = parse_cb
-        self._read_timeout = 100
+        self._read_timeout = 10000
         _thread.start_new_thread(self._tlv_read_thread, (self,))
 
     @staticmethod
@@ -46,19 +42,16 @@ class QpyTLVIoStream(object):
         data = b''
         parse_pos = 0
         while True:
-            data += tlv_ios._io.read(tlv_ios._read_timeout)
-            if len(data) >= 4:
-                eno, parsed_data = tlv_ios._qpytlv.parse(data)
-                tlv_ios._parse_cb(eno, parsed_data)
-                if eno == ErrorNo.TAG_ILLEGAL or eno == ErrorNo.TAG_NOT_FOUND:
-                    pass
-                elif eno == ErrorNo.NO_ERROR:
+            new_data = tlv_ios._io.read(tlv_ios._read_timeout)
+            data += new_data
+            if new_data:
+                eno, unparsed_data_len, parsed_data = tlv_ios._qpytlv.parse(data)
+                parse_pos = tlv_ios._qpytlv.get_parse_position()
+                tlv_ios._parse_cb(eno, unparsed_data_len, parsed_data, data)
+                if eno == ErrorNo.NO_ERROR:
                     data = b''
-                elif eno == ErrorNo.VAL_IS_SHORT:
-                    parse_pos = tlv_ios._qpytlv.get_parse_position()
-                    data = data[parse_pos:]
                 else:
-                    raise QpyTLVError("Unknown error.")
+                    data = data[parse_pos:]
 
     def write(self, data):
         w_data = self._qpytlv.build(data)

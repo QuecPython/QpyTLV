@@ -62,6 +62,7 @@ class OrderedDict:
         while curr != root:
             yield self.map[curr.key]
             curr = curr.next
+
     def __str__(self):
         root = self.root
         curr = root.next
@@ -71,6 +72,8 @@ class OrderedDict:
             curr = curr.next
         return str(out)
 
+    def __len__(self):
+        return len(self.map)
 
 if __name__ == '__main__':
     d = OrderedDict()
