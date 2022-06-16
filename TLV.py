@@ -12,6 +12,9 @@
 
 import ubinascii
 from usr.OrderedDict import OrderedDict
+from usr.logging import getLogger
+
+log = getLogger(__name__)
 
 #known_tags = ['82', '8A', '95', '9A', '9F10', '9F26', '9F36', '9F37', '9F1A']
 
@@ -164,6 +167,12 @@ emv_tags = {
     '9F55': 'Geographic Indicator'
 }
 
+class ErrorNo:
+    NO_ERROR = 0
+    TAG_ILLEGAL = -1
+    TAG_NOT_FOUND = -2
+    VAL_IS_SHORT = -3
+    VAL_IS_LONG = -4
 
 def hexify(number):
     """
@@ -214,6 +223,7 @@ class TLV:
             self.tags = emv_tags
 
         self.tlv_data = b''
+        self.parse_position = 0
         
         self.tag_lengths = set()
         for tag, tag_name in self.tags.items():
@@ -225,19 +235,19 @@ class TLV:
         """
         parsed_data = OrderedDict()
         self.tlv_data = tlv_data
+        self.parse_position = 0
 
         i = 0
-        while i < len(self.tlv_data): 
+        while i < len(self.tlv_data):
             tag_found = False
 
             for tag_length in self.tag_lengths:
                 for tag_s, tag_name in self.tags.items():
                     try:
                         tag = hexstring2bytes(tag_s)
-                    except TypeError:
-                        raise ValueError("tag string length must be even.")
-                    except ValueError:
-                        raise ValueError("tag string must be hex format.")
+                    except:
+                        log.error('Illegal tag:', tag_s)
+                        return ErrorNo.TAG_ILLEGAL, parsed_data
                     
                     if self.tlv_data[i:i+tag_length] == tag:
                         value_length = (self.tlv_data[i+tag_length] << 8) + self.tlv_data[i+tag_length+1]
@@ -245,19 +255,24 @@ class TLV:
                         value_end_position = i+tag_length+2+value_length
 
                         if value_end_position > len(self.tlv_data):
-                            raise ValueError('Parse error: tag ' + tag_s + ' declared data of length ' + str(value_length) + ', but actual data length is ' + str(int(len(self.tlv_data[value_start_position-1:-1])//2)))
+                            log.error('<value> is short.')
+                            return ErrorNo.VAL_IS_SHORT, parsed_data
 
                         value = self.tlv_data[value_start_position:value_end_position]
                         parsed_data[tag_s] = value
 
                         i = value_end_position
+                        self.parse_position = value_end_position
                         tag_found = True
 
             if not tag_found:
-                msg = 'Unknown tag found: ' + str(self.tlv_data[i:i+10])
-                raise ValueError(msg)
-        return parsed_data
+                log.error('Unknown tag found: ' + str(self.tlv_data[i:i+10]))
+                return ErrorNo.TAG_NOT_FOUND, parsed_data
+        return ErrorNo.NO_ERROR, parsed_data
 
+
+    def get_parse_position(self):
+        return self.parse_position
 
     def build(self, data_dict):
         """
@@ -265,12 +280,13 @@ class TLV:
         self.tlv_data = b''
         for tag, value in data_dict.items():
             if not value:
-                return self.tlv_data
+                value = b''
 
             value_len = len(value)
             if value_len > 65535:
-                raise ValueError("Length of value in TLV is too long ( > 65535).")
+                log.error("Length of value in TLV is too long ( > 65535 ).")
+                return ErrorNo.VAL_IS_LONG, self.tlv_data
 
             self.tlv_data = self.tlv_data + hexstring2bytes(tag) + hexstring2bytes("%04X" % value_len) + value
 
-        return self.tlv_data
+        return ErrorNo.NO_ERROR, self.tlv_data

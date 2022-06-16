@@ -10,7 +10,14 @@
 @copyright :Copyright (c) 2022
 """
 
-from usr.TLV import TLV
+from usr.TLV import TLV, ErrorNo
+
+class QpyTLVError(Exception):
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        return repr(self.value)
 
 class QpyTLV(object):
     def __init__(self, tags=None):
@@ -21,7 +28,10 @@ class QpyTLV(object):
             return self._tlv.parse(tlv_data)
         else:
             raise TypeError("tlv_data must be bytes or bytearray.")
-    
+
+    def get_parse_position(self):
+        return self._tlv.get_parse_position()
+
     def _build(self, data, upper_data=None, upper_tag=None):
         """
         Argument format:
@@ -48,7 +58,6 @@ class QpyTLV(object):
         """
 
         nested_key = []
-        res = b''
 
         if type(data) is not dict:
             raise TypeError("data must be dict.")
@@ -57,18 +66,18 @@ class QpyTLV(object):
             if not (type(value) is bytes or type(value) is bytearray):
                 nested_key.append(key)
 
-        if len(nested_key) == 0:
-            res = self._tlv.build(data)
-            if upper_data:
-                upper_data[upper_tag] = res
-        else:
+        if len(nested_key):
             for key in nested_key:
                 self._build(data[key], data, key)
-            res = self._tlv.build(data)
-            if upper_data:
-                upper_data[upper_tag] = res
 
-        return res
+        r_code, r_data = self._tlv.build(data)
+        if r_code != ErrorNo.NO_ERROR:
+            raise QpyTLVError("tlv build failed: %s" % r_code)
+
+        if upper_data:
+            upper_data[upper_tag] = r_data
+
+        return r_data
 
     def build(self, data):
         return self._build(data)
