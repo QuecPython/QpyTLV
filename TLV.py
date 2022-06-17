@@ -169,11 +169,12 @@ emv_tags = {
 
 class ErrorNo:
     NO_ERROR = 0
-    TAG_ILLEGAL = -1
-    TAG_NOT_FOUND = -2
-    LEN_IS_INSUFF = -3
-    VAL_IS_INSUFF = -4
-    VAL_IS_OVERFLOW = -5
+    TAG_BAD_FMT = -1
+    TAG_BAD_VAL = -2
+    TAG_IS_INSUFF = -3
+    LEN_IS_INSUFF = -4
+    VAL_IS_INSUFF = -5
+    VAL_IS_OVERFLOW = -6
 
 def hexify(number):
     """
@@ -219,7 +220,7 @@ class TLV:
             elif type(tags) == dict:
                 self.tags = tags
             else:
-                print('Invalid tags dictionary given - use list of tags or dict as {tag: tag_name}')
+                log.error('Invalid tags dictionary given - use list of tags or dict as {tag: tag_name}')
         else:
             self.tags = emv_tags
 
@@ -249,25 +250,31 @@ class TLV:
             tag_found = False
 
             for tag_length in self.tag_lengths:
+                may_has_valid_tag = False
                 for tag_s, tag_name in self.tags.items():
                     try:
                         tag = hexstring2bytes(tag_s)
                     except:
                         log.error('Illegal tag:', tag_s)
-                        return ErrorNo.TAG_ILLEGAL, len(self.tlv_data) - i, parsed_data
+                        return ErrorNo.TAG_BAD_FMT, len(self.tlv_data) - i, parsed_data
                     
+                    if tag.startswith(self.tlv_data[i:i+min(len(tag), len(self.tlv_data))]):
+                        may_has_valid_tag = True
+                    else:
+                        continue
+
                     if self.tlv_data[i:i+tag_length] == tag:
                         try:
                             value_length = (self.tlv_data[i+tag_length] << 8) + self.tlv_data[i+tag_length+1]
                         except:
-                            log.error('<len> is insufficient')
+                            log.error('<len> is insufficient, need more data.')
                             return ErrorNo.LEN_IS_INSUFF, len(self.tlv_data) - i, parsed_data
 
                         value_start_position = i+tag_length+2
                         value_end_position = i+tag_length+2+value_length
 
                         if value_end_position > len(self.tlv_data):
-                            log.error('<value> is insufficient.')
+                            log.error('<value> is insufficient, need more data.')
                             return ErrorNo.VAL_IS_INSUFF, len(self.tlv_data) - i, parsed_data
 
                         value = self.tlv_data[value_start_position:value_end_position]
@@ -277,9 +284,13 @@ class TLV:
                         self.parse_position = value_end_position
                         tag_found = True
 
+                if not may_has_valid_tag:
+                    log.error("Tag is bad in tlv_data.")
+                    return ErrorNo.TAG_BAD_VAL, len(self.tlv_data) - i, parsed_data
+
             if not tag_found:
-                log.error('Unknown tag found: ' + str(self.tlv_data[i:i+10]))
-                return ErrorNo.TAG_NOT_FOUND, len(self.tlv_data) - i, parsed_data
+                log.error('<tag> is insufficient, need more data.')
+                return ErrorNo.TAG_IS_INSUFF, len(self.tlv_data) - i, parsed_data
         return ErrorNo.NO_ERROR, len(self.tlv_data) - i, parsed_data
 
 
@@ -302,3 +313,14 @@ class TLV:
             self.tlv_data = self.tlv_data + hexstring2bytes(tag) + hexstring2bytes("%04X" % value_len) + value
 
         return ErrorNo.NO_ERROR, self.tlv_data
+
+    def may_has_valid_tag(self, data):
+        if not data:
+            return False
+
+        for tag_s, tag_name in self.tags.items():
+            tag = hexstring2bytes(tag_s)
+            if tag.startswith(data[0:min(len(tag), len(data))]):
+                return True
+
+        return False

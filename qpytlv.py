@@ -32,6 +32,9 @@ class QpyTLV(object):
     def get_parse_position(self):
         return self._tlv.get_parse_position()
 
+    def may_has_valid_tag(self, data):
+        return self._tlv.may_has_valid_tag(data)
+
     def _build(self, data, upper_data=None, upper_tag=None):
         """
         Argument format:
