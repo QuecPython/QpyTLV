@@ -48,7 +48,7 @@ class QpyTLVIoStream(object):
                 eno, unparsed_data_len, parsed_data = tlv_ios._qpytlv.parse(data)
                 parse_pos = tlv_ios._qpytlv.get_parse_position()
                 tlv_ios._parse_cb(eno, unparsed_data_len, parsed_data, data)
-                if eno == ErrorNo.NO_ERROR or eno == ErrorNo.TAG_BAD_VAL:
+                if eno == ErrorNo.NO_ERROR or eno == ErrorNo.TAG_BAD_FMT or eno == ErrorNo.TAG_BAD_VAL:
                     data = b''
                 else:
                     data = data[parse_pos:]

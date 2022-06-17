@@ -267,14 +267,14 @@ class TLV:
                         try:
                             value_length = (self.tlv_data[i+tag_length] << 8) + self.tlv_data[i+tag_length+1]
                         except:
-                            log.error('<len> is insufficient, need more data.')
+                            log.warn('<len> is insufficient, need more data.')
                             return ErrorNo.LEN_IS_INSUFF, len(self.tlv_data) - i, parsed_data
 
                         value_start_position = i+tag_length+2
                         value_end_position = i+tag_length+2+value_length
 
                         if value_end_position > len(self.tlv_data):
-                            log.error('<value> is insufficient, need more data.')
+                            log.warn('<value> is insufficient, need more data.')
                             return ErrorNo.VAL_IS_INSUFF, len(self.tlv_data) - i, parsed_data
 
                         value = self.tlv_data[value_start_position:value_end_position]
@@ -289,7 +289,7 @@ class TLV:
                     return ErrorNo.TAG_BAD_VAL, len(self.tlv_data) - i, parsed_data
 
             if not tag_found:
-                log.error('<tag> is insufficient, need more data.')
+                log.warn('<tag> is insufficient, need more data.')
                 return ErrorNo.TAG_IS_INSUFF, len(self.tlv_data) - i, parsed_data
         return ErrorNo.NO_ERROR, len(self.tlv_data) - i, parsed_data
 
