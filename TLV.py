@@ -220,7 +220,7 @@ class TLV:
             elif type(tags) == dict:
                 self.tags = tags
             else:
-                log.error('Invalid tags dictionary given - use list of tags or dict as {tag: tag_name}')
+                raise TypeError('Invalid tags dictionary given - use list of tags or dict as {tag: tag_name}')
         else:
             self.tags = emv_tags
 
@@ -229,6 +229,8 @@ class TLV:
         
         self.tag_lengths = set()
         for tag, tag_name in self.tags.items():
+            if (not tag) or len(tag)%2:
+                raise ValueError('Tag length must be even and none-zero:', tag)
             self.tag_lengths.add(len(tag)//2)
 
 
