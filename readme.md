@@ -1,5 +1,7 @@
 # QpyTLV - Quecpython's data serialization format
 
+[[English](./readme_en.md)]
+
 ## Overview
 
 `TLV`是`Tag（标签）`、`Length（长度）`和`Value（数值）`的简称，是一种数据序列化的格式。其结构简单、解析速度快，支持报文嵌套和顺序拼接。在串口、蓝牙甚至网络数据传输中比较常用。
@@ -8,11 +10,11 @@
 
 ## Data structure
 
-### **Base data structure**
+### **Basic data structure**
 
 基础的数据结构如下：
 
-![BaseDataStructure.png](./images/BaseDataStructure.png)
+![BasicDataStructure.png](./images/BasicDataStructure.png)
 
 图中，`Tag`的存储长度为2字节，`Length`的存储长度为2字节，`Value`的存储长度为`Length`数值所指定的大小，单位为字节。
 
@@ -77,7 +79,7 @@ tags = {
 > - tag可使用以上两种方式进行定义，以dict的格式定义时，key值是tag本身，value值是对tag的描述。
 > - tag限制为偶数长度十六进制字符串，长度不做限制。比如`'06'`、`'abcd'`等都是合法tag，`'6'`、`'abcx'`等都是非法tag。
 > - 这里tag长度不做限制，是因为底层存储了tag的长度。如果不定长的tag给业务解析带来了不便，则业务上定义tag时，将长度保持为方便解析的大小即可。
-> - 为了方便用户书写，这里才将tag在定义时约束为字符串，实际构建TLV结构时，是将其转换为bytes类型的，比如`'abc'`会转换为b'\x0a\xbc'。注意这里是按照字符串的书写顺序转换的，即`大端模式`。
+> - 为了方便用户书写，这里才将tag在定义时约束为字符串，实际构建TLV结构时，是将其转换为bytes类型的，比如`'abc'`会转换为`b'\x0a\xbc'`。注意这里是按照字符串的书写顺序转换的，即`大端模式`。
 
 ### **Step4. Create a object of class QpyTLV**
 
@@ -161,7 +163,7 @@ d = tlv.parse(b)
 print(d)
 ```
 
-假设上面构建出的数据b就是用户接收到的TLV结构，使用以上代码进行解析，结果如下：
+假设上面构建出的数据`b`就是用户接收到的TLV结构，使用以上代码进行解析，结果如下：
 
 ```python
 [('aaaa', b'\xaa\xaa'), ('bbbb', b'\xdd\xdd\x00\x02\xdd\xdd\xcc\xcc\x00\x02\xcc\xcc'), ('eeee', b'\xa5\xa5\x00\x06\xe1\xe1\x00\x02\xe1\xe1\xff\xff\x00\x02\xff\xff')]
