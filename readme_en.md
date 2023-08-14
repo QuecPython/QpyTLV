@@ -1,6 +1,6 @@
 # QpyTLV - Quecpython's data serialization format
 
-[[中文](./readme_en.md)]
+[[中文](./readme.md)]
 
 ## Overview
 
@@ -141,7 +141,7 @@ b = tlv.build(d)
 print(b)
 ```
 
-The above code constructs the TLV structure of the user data d into a bytes-type data b, which appears as follows:
+The above code constructs the TLV structure of the user data `d` into a bytes-type data `b`, which appears as follows:
 ```python
 b'\xaa\xaa\x00\x02\xaa\xaa\xbb\xbb\x00\x0c\xdd\xdd\x00\x02\xdd\xdd\xcc\xcc\x00\x02\xcc\xcc\xee\xee\x00\x10\xa5\xa5\x00\x06\xe1\xe1\x00\x02\xe1\xe1\xff\xff\x00\x02\xff\xff'
 ```
@@ -169,7 +169,7 @@ Assuming the previously constructed data `b` is the TLV structure received by th
 [('aaaa', b'\xaa\xaa'), ('bbbb', b'\xdd\xdd\x00\x02\xdd\xdd\xcc\xcc\x00\x02\xcc\xcc'), ('eeee', b'\xa5\xa5\x00\x06\xe1\xe1\x00\x02\xe1\xe1\xff\xff\x00\x02\xff\xff')]
 ```
 
-Users might be surprised to see that the parsed result seems quite different from the original data d. There are two reasons for this:
+Users might be surprised to see that the parsed result seems quite different from the original data `d`. There are two reasons for this:
 
 - The output uses the OrderedDict format instead of dict, to maintain consistency with the order of the TLV structure.
 - Only the first level of TLV is parsed, so only parallel structures can be parsed. QpyTLV cannot determine whether the data carried by the first level is a nested substructure or the actual user data. Upon receiving the parsed data, the business logic should call the `parse` interface multiple times for nested structure parsing.
