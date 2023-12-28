@@ -12,6 +12,9 @@
 
 import ubinascii
 from usr.OrderedDict import OrderedDict
+from usr.logging import getLogger
+
+log = getLogger(__name__)
 
 #known_tags = ['82', '8A', '95', '9A', '9F10', '9F26', '9F36', '9F37', '9F1A']
 
@@ -164,6 +167,14 @@ emv_tags = {
     '9F55': 'Geographic Indicator'
 }
 
+class ErrorNo:
+    NO_ERROR = 0
+    TAG_BAD_FMT = -1
+    TAG_BAD_VAL = -2
+    TAG_IS_INSUFF = -3
+    LEN_IS_INSUFF = -4
+    VAL_IS_INSUFF = -5
+    VAL_IS_OVERFLOW = -6
 
 def hexify(number):
     """
@@ -209,55 +220,84 @@ class TLV:
             elif type(tags) == dict:
                 self.tags = tags
             else:
-                print('Invalid tags dictionary given - use list of tags or dict as {tag: tag_name}')
+                raise TypeError('Invalid tags dictionary given - use list of tags or dict as {tag: tag_name}')
         else:
             self.tags = emv_tags
 
         self.tlv_data = b''
+        self.parse_position = 0
         
         self.tag_lengths = set()
         for tag, tag_name in self.tags.items():
+            if (not tag) or len(tag)%2:
+                raise ValueError('Tag length must be even and none-zero:', tag)
             self.tag_lengths.add(len(tag)//2)
 
 
     def parse(self, tlv_data):
-        """
+        """_summary_
+
+        Args:
+            tlv_data (bytes): data to be parsed
+
+        Returns:
+            tuple: (errno, unparsed_data_len, parsed_data)
         """
         parsed_data = OrderedDict()
         self.tlv_data = tlv_data
+        self.parse_position = 0
 
         i = 0
-        while i < len(self.tlv_data): 
+        while i < len(self.tlv_data):
             tag_found = False
 
             for tag_length in self.tag_lengths:
+                may_has_valid_tag = False
                 for tag_s, tag_name in self.tags.items():
                     try:
                         tag = hexstring2bytes(tag_s)
-                    except TypeError:
-                        raise ValueError("tag string length must be even.")
-                    except ValueError:
-                        raise ValueError("tag string must be hex format.")
+                    except:
+                        log.error('Illegal tag:', tag_s)
+                        return ErrorNo.TAG_BAD_FMT, len(self.tlv_data) - i, parsed_data
                     
+                    if tag.startswith(self.tlv_data[i:i+min(len(tag), len(self.tlv_data))]):
+                        may_has_valid_tag = True
+                    else:
+                        continue
+
                     if self.tlv_data[i:i+tag_length] == tag:
-                        value_length = (self.tlv_data[i+tag_length] << 8) + self.tlv_data[i+tag_length+1]
+                        try:
+                            value_length = (self.tlv_data[i+tag_length] << 8) + self.tlv_data[i+tag_length+1]
+                        except:
+                            log.warn('<len> is insufficient, need more data.')
+                            return ErrorNo.LEN_IS_INSUFF, len(self.tlv_data) - i, parsed_data
+
                         value_start_position = i+tag_length+2
                         value_end_position = i+tag_length+2+value_length
 
                         if value_end_position > len(self.tlv_data):
-                            raise ValueError('Parse error: tag ' + tag_s + ' declared data of length ' + str(value_length) + ', but actual data length is ' + str(int(len(self.tlv_data[value_start_position-1:-1])//2)))
+                            log.warn('<value> is insufficient, need more data.')
+                            return ErrorNo.VAL_IS_INSUFF, len(self.tlv_data) - i, parsed_data
 
                         value = self.tlv_data[value_start_position:value_end_position]
                         parsed_data[tag_s] = value
 
                         i = value_end_position
+                        self.parse_position = value_end_position
                         tag_found = True
 
-            if not tag_found:
-                msg = 'Unknown tag found: ' + str(self.tlv_data[i:i+10])
-                raise ValueError(msg)
-        return parsed_data
+                if not may_has_valid_tag:
+                    log.error("Tag is bad in tlv_data.")
+                    return ErrorNo.TAG_BAD_VAL, len(self.tlv_data) - i, parsed_data
 
+            if not tag_found:
+                log.warn('<tag> is insufficient, need more data.')
+                return ErrorNo.TAG_IS_INSUFF, len(self.tlv_data) - i, parsed_data
+        return ErrorNo.NO_ERROR, len(self.tlv_data) - i, parsed_data
+
+
+    def get_parse_position(self):
+        return self.parse_position
 
     def build(self, data_dict):
         """
@@ -265,12 +305,24 @@ class TLV:
         self.tlv_data = b''
         for tag, value in data_dict.items():
             if not value:
-                return self.tlv_data
+                value = b''
 
             value_len = len(value)
             if value_len > 65535:
-                raise ValueError("Length of value in TLV is too long ( > 65535).")
+                log.error("Length of value in TLV is too long ( > 65535 ).")
+                return ErrorNo.VAL_IS_OVERFLOW, self.tlv_data
 
             self.tlv_data = self.tlv_data + hexstring2bytes(tag) + hexstring2bytes("%04X" % value_len) + value
 
-        return self.tlv_data
+        return ErrorNo.NO_ERROR, self.tlv_data
+
+    def may_has_valid_tag(self, data):
+        if not data:
+            return False
+
+        for tag_s, tag_name in self.tags.items():
+            tag = hexstring2bytes(tag_s)
+            if tag.startswith(data[0:min(len(tag), len(data))]):
+                return True
+
+        return False
