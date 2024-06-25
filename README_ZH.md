@@ -1,4 +1,4 @@
-# QuecPython 软件看门狗
+# Quecpython 数据序列化格式 -- QpyTLV
 
 中文 | [English](README.md)
 

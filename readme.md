@@ -1,4 +1,4 @@
-# QuecPython Software Watchdog
+# Quecpython's data serialization format -- QpyTLV
 
 [中文](README_ZH.md) | English
 
