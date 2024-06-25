@@ -1,7 +1,5 @@
 # QpyTLV - Quecpython's data serialization format
 
-[[中文](./readme.md)]
-
 ## Overview
 
 `TLV` stands for `Tag`, `Length` and `Value`, which is a data serialization format. It features a simple structure, fast parsing speed, supports nested messages, and sequential concatenation. It is commonly used in serial communication, Bluetooth, and even network data transmission.
