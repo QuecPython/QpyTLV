@@ -1,6 +1,6 @@
 # QpyTLV - Quecpython's data serialization format
 
-[[English](./readme_en.md)]
+中文 | [English](README.md)
 
 ## Overview
 
